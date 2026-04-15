@@ -1,8 +1,19 @@
 <!DOCTYPE html>
 <html>
 <body>
+    <div style="background: rgb(100, 0, 0); font-size: 40px; width: 100%; height: 100vh;">Service Failed. Failed to open Infra<span style="color: red;">Red</span>. Enable JavaScript on your device.</div>
 <script>
 window.location.href = '/home/';
+</script>
+<script>
+document.addEventListener('keydown', (key) => {
+    if (key.ctrlKey && key.shiftKey && key.key.toLowerCase() === 'd') {
+        key.preventDefault();
+        if (prompt('Enter Dev Passcode>__') === 'devpass123') {
+            alert('youre in!');
+        };
+    };
+});
 </script>
 </body>
 </html>

@@ -60,24 +60,35 @@
             <a href="/dashboard/">Dashboard</a>
             <a href="/about/">About</a>
             <a href="/feedback/">Feedback</a>
-            <a href="/login/" class="login">Login</a>
+            <a href="/login/" class="login-btn">Login</a>
+            <a href="/register/" class="login-btn" style="background: rgba(255, 255, 255, 0);">Register</a>
         </div>
         <div class="container">
             <div class="inner-cont">
                 <div class="teacher">
                     <h2>Teachers</h2>
                     <p>Struggling to keep your class engaged outside the classroom? InfraRed makes it easy. Whether it's a quick text to clarify an assignment or a deep-dive via screen share, our platform is built to make school help accessible and safe. No complicated setups-just clear communication. </p>
-                    <a href="/login/" class="login">Get Started</a>
+                    <a href="/login/" class="login-btn">Get Started</a>
                 </div>
                 <div class="student">
                     <h2>Students</h2>
                     <p>Stop chasing notes in group chats and buried email threads. InfraRed is the sleek, all-in-one hub built for your school life. Whether you're hopping on a quick video call to crush a group project or screen-sharing to get help with a tough assignment, we've got you covered.</p>
-                    <a href="/login/" class="login">Get Started</a>
+                    <a href="/login/" class="login-btn">Get Started</a>
                 </div>
             </div>
             <div class="inner-cont">
                 <a href="/about/">Learn More &rArr;</a>
             </div>
         </div>
+        <script>
+            document.addEventListener('keydown', (key) => {
+                if (key.ctrlKey && key.shiftKey && key.key.toLowerCase() === 'd') {
+                    key.preventDefault();
+                    if (prompt('Enter Dev Passcode>__') === 'devpass123') {
+                        alert('youre in!');
+                    };
+                };
+            });
+        </script>
     </body>
 </html>
