@@ -57,24 +57,3 @@ body {
     color: gray;
     border-radius: 20px;
 }
-@keyframes shake {
-    0%{
-        transform: translateX(-20px);
-        background-color: red;
-    }
-    20%{
-        transform: translateX(20px);
-        background-color: pink;
-    }
-    40%{
-        transform: translateY(20px);
-        background-color: brown;
-    }
-    60%{
-        transform: translateY(-20px);
-        background-color: black;
-    }
-    80%{
-        transform: translate(0);
-    }
-}

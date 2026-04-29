@@ -6,5 +6,15 @@
         "ritwickdey.LiveServer"
       ]
     }
-  }
+  },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "InfraRed",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    }
+  },
+  "postStartCommand": "npm start",
+  "postCreateCommand": "npm i"
 }
