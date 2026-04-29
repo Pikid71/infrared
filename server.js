@@ -10,7 +10,7 @@ const PORT = 8000;
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const ADMIN_PASS = 'pass123';
+const ADMIN_PASS = process.env.ADMIN_PASS;
 const nfilter = require('./filter');
 
 const createDOMPurify = require('dompurify');
