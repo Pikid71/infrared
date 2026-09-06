@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
     "axios": "^1.15.0",
     "cheerio": "^1.2.0",
     "crypto": "^1.0.1",
@@ -9,7 +10,6 @@
     "express": "^5.2.1",
     "jsdom": "^29.0.2",
     "marked": "^18.0.1",
-    "obscenity": "^0.4.6",
     "path": "^0.12.7",
     "socket.io": "^4.8.3"
   },

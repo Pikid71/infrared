@@ -11,10 +11,10 @@
   "portsAttributes": {
     "8000": {
       "label": "InfraRed",
-      "onAutoForward": "notify",
-      "visibility": "public"
+      "onAutoForward": "notify"
     }
   },
+  "postCreateCommand": "npm i",
   "postStartCommand": "npm start",
-  "postCreateCommand": "npm i"
+  "postAttachCommand": "gh codespace ports visibility 8000:public -c $CODESPACE_NAME"
 }

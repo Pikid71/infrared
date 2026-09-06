@@ -20,7 +20,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 40px;
-    margin-bottom: 20px;
+    margin-bottom: 2vh;
     height: 8vh;
 }
 .header .h1 {
