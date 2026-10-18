@@ -52,6 +52,7 @@
 .game {
     border: 3px solid black;
     margin: 2px;
+    flex: 1;
 }
 .name {
     font-size: 30px;
@@ -97,7 +98,6 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="/script.js"></script>
 <script>
-const socket = io();
 
 login_key(getcookie('usrnm'), getcookie('key'))
 
@@ -110,14 +110,13 @@ async function addRooms(rooms) {
         div.innerHTML = `
         <a class="login-btn" href="/c/chat?r=${room}">${room}</a>
         <p>${rooms[room].users.length} Users</p>
-        <div class="users">${rooms[room].users.map(u => `<span>[${u.rank.toUpperCase()}] ${u.username}</span>`).join('')}</div>`
+        <div class="users" id="users-${room}">${rooms[room].users.map(u => u).join('<br>')}</div>`
         div.className = 'room'
         cont.appendChild(div);
-        await new Promise(resolve => setTimeout(resolve, 200))
     };
 }
 
-socket.emit("Get-rooms", (callback) => {
+socket.emit("get-rooms", (callback) => {
     addRooms(callback.rooms)
 })
 
@@ -133,11 +132,16 @@ const gamesmenu = `
                     <div class="desc">Hollow Knight is a 2D action-adventure video game developed and published by Team Cherry in February 2017. You play as a small, silent knight exploring a vast, ruined underground kingdom called Hallownest. The game belongs to a genre called "Metroidvania," which means you explore a giant connected map, unlock new movement abilities, and return to areas you could not reach before.</div>
                     <button class="launch-game" onclick="window.location.href='/play/hkn';">Launch</button>
                 </div>
+                <div class="game">
+                    <div class="name">Escape Road 2</div>
+                    <div class="desc">Escape Road 2 is a fast-paced, blocky, low-poly driving and action game where you play as a getaway driver fleeing a massive police pursuit after a bank heist</div>
+                    <button class="launch-game" onclick="window.location.href='/play/esc';">Launch</button>
+                </div>
             </div>
 `
 setTimeout(function() {
     document.getElementById('cont-large').innerHTML += gamesmenu
-}, 0)
+}, 1000)
 </script>
 </body>
 </html>

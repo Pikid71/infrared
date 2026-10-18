@@ -5,7 +5,7 @@ const template_id = 'template_infrared';
 const service_id = 'blackchat_conformation_2';
 function send(username, code, user_email) {
     console.log(username, code, user_email)
-    emailjs.send(
+    return emailjs.send(
         service_id,
         template_id,
         {
@@ -22,7 +22,8 @@ function send(username, code, user_email) {
         console.log('Sent', res.status, res.text);
     })
     .catch((err) => {
-        console.log('Error', err)
+        console.log('Error on emailjs>__', err.text)
+        return err
     })
 }
 console.log('Emailer Imported Successfully')

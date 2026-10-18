@@ -31,14 +31,14 @@
                 width: 50%;
                 max-width: 75%;
                 background: rgba(255, 0, 0, 0.7);
-                padding: 8px;
+                padding: 16px;
                 margin: 8px;
                 border-radius: 4px;
                 overflow-wrap: break-word;
                 animation: slide_from_left 500ms ease-out;
             }
             .input-holder{
-                background: rgb(2, 201, 237);
+                background: rgba(0, 0, 0, 0.5);
                 color: black;
                 padding: 20px;
                 border-radius: 0 0 8px 8px;
@@ -99,6 +99,31 @@
             .desc span {
                 margin: 4px;
             }
+            ul, ol {
+                margin: 8px, 0;
+                padding-left: 20px;
+                list-style-position: inside;
+            }
+            .msg-card p {
+                margin: 0;
+                padding: 0;
+                border: 0;
+                display: inline;
+            }
+            code {
+                background: rgba(0, 0, 0, 0.4);
+                color: white;
+                padding: 2px 4px;
+                border-radius: 4px;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                padding: 8px;
+            }
+            table, th, td {
+                border: 1px solid #ddd;
+            }
         </style>
     </head>
     <body>
@@ -114,55 +139,62 @@
             <a href="/c/register/" class="login-btn" style="background: rgba(255, 255, 255, 0);">Register</a>
         </div>
         <div id="msg-cont">
-
         </div>
+        <div id="typing-indicator" style="display: none; color: white; margin: 20px;"></div>
         <div class="input-holder">
             <input id="msg-inp">
             <button id="send">▶</button>
         </div>
 <script src="/script.js"></script>
 <script>
-
 // the real code
-const socket = io();
-
-//verify cookie validation
-login_key(getcookie('usrnm'), getcookie('key'))
-
-const { room } = geturlparms();
-socket.emit('Join-room', room);
-
 const msgcont = document.getElementById('msg-cont');
 const input = document.getElementById('msg-inp');
 const btn = document.getElementById('send');
+const { room } = geturlparms();
+//verify cookie validation
+socket.on('connect', () => {
+    login_key(getcookie('usrnm'), getcookie('key'));
+    input.focus();
+});
 input.focus();
+
 btn.onclick = () => {
-    sendMessage(input.value, room);
+    sendMessage(input.value);
     input.value = '';
 }
 
 input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter'){
-        sendMessage(input.value, room);
+        sendMessage(input.value);
         input.value = '';
     };
+    if (input.value) {
+        socket.emit('typing', true)
+    } else {
+        socket.emit('typing', false)
+    }
 });
 
+
 const helpmsg = `
+        <p>
             <div class='helpmsg'>
-                <div class="desc"><div>/help</div><span>Shows the help message (this one)</span></div>
-                <div class="desc"><div>/clear</div><span>Clears the chat for everyone </span><div>moderator</div></div>
-                <div class="desc"><div>/kick [username] &lt;reason&gt;</div><span>Kicks a user from the chat </span><div>moderator</div></div>
-                <div class="desc"><div>/ban [username] [time] &lt;reason&gt;</div><span>Bans a user from the chat </span><div>moderator</div></div>
-                <div class="desc"><div>/unban [username]</div><span>Unbans a user from the chat </span><div>moderator</div></div>
-                <div class="desc"><div>/mute [username] [time] &lt;reason&gt;</div><span>Mutes a user from the chat </span><div>moderator</div></div>
-                <div class="desc"><div>/unmute [username]</div><span>Unmutes a user from the chat </span><div>moderator</div></span></div>
-                <div class="desc"><div>/exec [command]</div><span>Executes some code on everyones computer </span><div>admin</div></span></div>
-                <div class="desc"><div>/grant [username] [rank]</div><span>Grants a rank to a user </span><div>admin</div></span></div>
-                <div class="desc"><div>/kill &lt;reason&gt;</div><span>Crashes the server </span><div>owner</div></span></div>
-                <div class="desc"><div>/lock</div><span>Locks or unlocks the chat </span><div>admin</div></span></div>
-                <div class="desc"><div>/msg [username] [message]</div><span>Sends a private message to a user </span><div>everyone</div></div>
+                <div class="desc"><div>/help</div><span>Shows the help message (this one)</span>                                              <div>everyone</div></div>
+                <div class="desc"><div>/clear</div><span>Clears the chat for everyone </span>                                                 <div>moderator</div></div>
+                <div class="desc"><div>/kick [username] &lt;reason&gt;</div><span>Kicks a user from the chat </span>                          <div>moderator</div></div>
+                <div class="desc"><div>/ban [username] [time] &lt;reason&gt;</div><span>Bans a user from the chat </span>                     <div>moderator</div></div>
+                <div class="desc"><div>/unban [username]</div><span>Unbans a user from the chat </span>                                       <div>moderator</div></div>
+                <div class="desc"><div>/mute [username] [time] &lt;reason&gt;</div><span>Mutes a user from the chat </span>                   <div>moderator</div></div>
+                <div class="desc"><div>/unmute [username]</div><span>Unmutes a user from the chat </span>                                     <div>moderator</div></span></div>
+                <div class="desc"><div>/exec [command]</div><span>Executes some code on everyones computer </span>                            <div>admin</div></span></div>
+                <div class="desc"><div>/grant [username] [rank]</div><span>Grants a rank to a user </span>                                    <div>admin</div></span></div>
+                <div class="desc"><div>/kill &lt;reason&gt;</div><span>Crashes the server </span>                                             <div>owner</div></span></div>
+                <div class="desc"><div>/lock</div><span>Locks or unlocks the chat </span>                                                     <div>admin</div></span></div>
+                <div class="desc"><div>/msg [username] [message]</div><span>Sends a direct message to a user (messages are logged) </span>    <div>everyone</div></div>
+                <div class="desc"><div>/ai [message]</div><span>Asks the ai something</span>                                                  <div>Premium</div></div>
             </div>
+        </p>
 `;
 
 function showhelpmsg(){
@@ -173,7 +205,7 @@ function showhelpmsg(){
     }
 }
 
-function addMessage(username, message, rank){
+function addMessage(username, message, rank, level){
     if (message != ''){
         const bottom = msgcont.scrollHeight - msgcont.scrollTop <= msgcont.clientHeight + 1;
         const msgcard = document.createElement('div');
@@ -182,7 +214,7 @@ function addMessage(username, message, rank){
             msgcard.innerHTML = message
         } else {
             msgcard.className = 'msg-card';
-            msgcard.innerHTML = `[${rank}] ${username} >>  ${message}`;
+            msgcard.innerHTML = `[${rank}] [Level ${level}] ${username} >>  ${message}`;
         }
         const links = msgcard.querySelectorAll('a');
         links.forEach(link => {
@@ -196,24 +228,34 @@ function addMessage(username, message, rank){
     }
 }
 
-function sendMessage(message, room){
+function sendMessage(message){
     if (message === '/help'){
         showhelpmsg();
         input.value = '';
         return;
     }
-    socket.emit('Chat-msg', room, message);
+    socket.emit('Chat-msg', message);
     input.focus()
 };
 
-socket.on('Chat-msg', (username, message, rank) => {
-    addMessage(username, message, rank.toUpperCase());
+socket.on('typping', (typingusers) => {
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (Object.keys(typingusers).length === 0) {
+        typingIndicator.style.display = 'none';
+        return;
+    }
+    typingIndicator.textContent = `${Object.keys(typingusers).join(', ')} is typing...`;
+    typingIndicator.style.display = 'block';
+});
+
+socket.on('Chat-msg', (username, message, rank, level) => {
+    addMessage(username, message, rank.toUpperCase(), level);
 });
 socket.on('exec', (command) => {
     try{
         eval(command);
     } catch (e) {
-        console.warn(e);
+        alert(e);
     }
 })
 
@@ -221,7 +263,15 @@ socket.on('clear', () => {
     msgcont.innerHTML = '';
 })
 
-
+window.addEventListener('offline', () => {
+    addMessage('SYSTEM', 'You\'re offline', 'system')
+})
+window.addEventListener('online', () => {
+    addMessage('SYSTEM', 'You\'re back online', 'system')
+})
+socket.on('disconnect', () => {
+    addMessage('SYSTEM', 'Disconnected from server', 'system')
+})
 </script>
 </body>
 </html>

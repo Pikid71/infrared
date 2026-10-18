@@ -47,6 +47,9 @@
             .vcdcont span {
                 color: black;
             }
+            .login-area div input{
+                cursor: pointer;
+            }
         </style>
         <script src="/socket.io/socket.io.js"></script>
     </head>
@@ -68,6 +71,7 @@
                     <input id="email-inp" type="email" placeholder="Email:"/>
                     <input id="password-inp" type="password" placeholder="Password:">
                     <input id="password-inp2" type="password" placeholder="Confirm Password:"/>
+                    <div style="color: black;"><input type="checkbox" id="checkbox"> I agree to the <a style="color: black;" href="/c/tos/"> Terms and conditions</a></div>
                     <div id="mssgg"></div>
                     <button id="login-btn" onclick="verifyLogin()" class="login-btn">Send code</button>
                 <div style="color: black;">Already have an account? <button type="button" class="login-btn" onclick="window.location.href=`/c/login?${window.location.search.slice(1)}`;">Login Here</button></div>
@@ -79,13 +83,15 @@
         </div>
 <script src="/script.js"></script>
 <script>
-const socket = io();
 const logg = document.getElementById('log')
 const usrnm = document.getElementById('username-inp');
 const email = document.getElementById('email-inp');
 const pass = document.getElementById('password-inp');
 const pass2 = document.getElementById('password-inp2');
 const vcodei = document.getElementById('vcode-inp');
+const checkbox = document.getElementById('checkbox')
+
+let sent = false
 
 function allert(inp) {
     const msg = document.getElementById('mssgg')
@@ -96,42 +102,46 @@ function allert(inp) {
     width: max-content;
     margin: auto;`
 }
-allert('Please do not use your regular password for this site because it may compromise your security <br>(we have not implemented any data protection measures for passwords yet)')
 usrnm.addEventListener('keydown', (key) => {if (key.key === 'Enter'){ key.preventDefault(); email.focus()}});
 email.addEventListener('keydown', (key) => {if (key.key === 'Enter'){ key.preventDefault(); pass.focus()}});
 pass.addEventListener('keydown', (key) => {if (key.key === 'Enter'){ key.preventDefault(); pass2.focus()}});
 pass2.addEventListener('keydown', (key) => {if (key.key === 'Enter'){ key.preventDefault(); verifyLogin()}});
 vcodei.addEventListener('keydown', (key) => {if (key.key === 'Enter'){ key.preventDefault(); verifyCode()}});
 
-usrnm.oninput = function() {usrnm.value = usrnm.value.replace(/[^\w\-]/g, '');};
+usrnm.oninput = function() {usrnm.value = usrnm.value.replace(/[^\w\-]/g, '')};
 
 function verifyLogin(){
     if (usrnm.value && pass.value && email.value && pass2.value){
         if (usrnm.value != pass.value){
             if (pass2.value === pass.value) {
                 if(email.checkValidity()){
-                    socket.emit('Register-start', usrnm.value, pass.value, email.value, (callback) => {
-                        if (!(callback.success && !callback.error)) {
-                            allert(callback.error);
-                        } else {
-                            logg.style.display = 'none'
-                            const vcd = document.getElementById('vcd');
-                            vcd.style.display = 'flex';
-                            const cont = document.createElement('div');
-                            cont.className = 'vcdcont';
-                            const first = document.createElement('span');
-                            first.textContent = 'The verification code is sent to ';
-                            const eml = document.createElement('span');
-                            eml.textContent = email.value;
-                            eml.style = 'color: orangered;';
-                            const second = document.createElement('span');
-                            second.textContent = ' check your inbox and spam ';
-                            cont.appendChild(first);
-                            cont.appendChild(eml);
-                            cont.appendChild(second);
-                            vcd.appendChild(cont);
-                        }
-                    })
+                    if(checkbox.checked){
+                        if(sent) {return}
+                        sent = true
+                        socket.emit('Register-start', usrnm.value, pass.value, email.value, (callback) => {
+                            if (!(callback.success && !callback.error)) {
+                                allert(callback.error);
+                                sent = false
+                            } else {
+                                logg.style.display = 'none'
+                                const vcd = document.getElementById('vcd');
+                                vcd.style.display = 'flex';
+                                const cont = document.createElement('div');
+                                cont.className = 'vcdcont';
+                                const first = document.createElement('span');
+                                first.textContent = 'The verification code is sent to ';
+                                const eml = document.createElement('span');
+                                eml.textContent = email.value;
+                                eml.style = 'color: orangered;';
+                                const second = document.createElement('span');
+                                second.textContent = ' check your inbox and spam ';
+                                cont.appendChild(first);
+                                cont.appendChild(eml);
+                                cont.appendChild(second);
+                                vcd.appendChild(cont);
+                            }
+                        })
+                    } else allert('Agree with the TOS to continue')
                 } else {
                     allert('Please enter a valid email to proceed')
                 }
@@ -154,7 +164,7 @@ function verifyCode() {
             const {room, redir} = geturlparms()
             window.location.href = redir;
         } else {
-            alert(callback.error)
+            alert(callback.error || 'no error')
         }
     })
 }

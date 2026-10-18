@@ -68,14 +68,13 @@
                 <div id="msg">Please log-in </div>
                 <input id="username-inp" type="text" placeholder="Enter Username here..."/>
                 <input id="password-inp" type="password" placeholder="Enter Password here...">
+                <div id="mssgg"></div>
                 <button id="login-btn" onclick="verifyLogin()" class="login-btn">Authenticate Login</button>
                 <div style="color: black;">Don't have an account? <button id="login-btn" onclick="window.location.href='/c/register' + window.location.search" class="login-btn">Register Now</button></div>
             </div>
         </div>
 <script src="/script.js"></script>
 <script>
-
-const socket = io();
 const btn = document.getElementById('login-btn');
 const usrnm = document.getElementById('username-inp');
 const pass = document.getElementById('password-inp');
@@ -92,6 +91,16 @@ pass.addEventListener('keydown', (key) => {
     };
 });
 
+function allert(inp) {
+    const msg = document.getElementById('mssgg')
+    msg.innerHTML = inp
+    msg.style = `
+    color: red;
+    display: block;
+    width: max-content;
+    margin: auto;`
+}
+
 function verifyLogin(){
     if (usrnm.value != '' && pass.value != '') {
         socket.emit('Login', usrnm.value.trim(), pass.value, (callback) => {
@@ -100,7 +109,7 @@ function verifyLogin(){
                 document.cookie = `usrnm=${encodeURIComponent(callback.username)}; path=/; max-age=3600; SameSite=Lax`;
                 window.location.href = redir;
             } else if (callback.error) {
-                alert('Error: ' + callback.error);
+                allert('Error: ' + callback.error);
             }
         });
     };
@@ -124,6 +133,8 @@ function get(){
             return 'if you want to play eaglercraft'
         case '/play/hkn/':
             return 'to continue to hollow knight'
+        case '/play/esc/':
+            return 'to play escape road'
         default:
             return 'to continue'
     }

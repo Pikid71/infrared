@@ -57,3 +57,12 @@ body {
     color: gray;
     border-radius: 20px;
 }
+.pmsg {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, .8);
+    border-radius: 8px;
+    padding: 8px;
+    max-width: 40%;
+}

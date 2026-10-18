@@ -1,3 +1,4 @@
+const socket = io()
 // path: /public/script.js
 function login_key(username, key) {
     if (username && key) {
@@ -5,7 +6,6 @@ function login_key(username, key) {
             if (callback.success){
                 document.cookie = `key=${encodeURIComponent(callback.key)}; path=/; max-age=3600; SameSite=Lax;`;
                 document.cookie = `usrnm=${encodeURIComponent(callback.username)}; path=/; max-age=3600; SameSite=Lax;`;
-                alert('Login successful');
             } else {
                 console.warn('Error: ' + callback.error);
                 document.cookie = `key=; path=/; max-age=0; SameSite=Lax;`;
@@ -14,11 +14,11 @@ function login_key(username, key) {
             };
         });
     } else {
-        window.location.href = `/c/login?re=${new URL(window.location.href).pathname}`
+        window.location.href = `/c/login?re=${new URL(window.location.href).pathname}${window.location.search}`
     }
 }
 
-function getcookie(name) {// document.cookie looks like "usrnm=pikid; key=quiavgfhya8rgt48gyh89a=gsd-; ..."
+function getcookie(name) {
     const cookies = document.cookie.split(';');
     const cookie = cookies.find(c => c.trim().startsWith(name+'='));
     return cookie ? decodeURIComponent(cookie.split('=')[1]) : null;
@@ -39,6 +39,34 @@ function geturlparms() {
     }
     return { room, redir }
 }
+
+function reload() {
+    window.location.reload()
+}
+
 window.addEventListener('beforeunload', () => {
     socket.disconnect()
 })
+if (!window.location.href.includes('chat')){
+    socket.on('Chat-msg', (username, message, rank, level) => {
+        const div = document.createElement('div');
+        div.className = 'pmsg';
+        if(username.toLowerCase() === 'system'){
+            div.innerHTML = message
+        } else {
+            div.innerHTML = `[${rank}] [Level ${level}] ${username} >> ${message}`;
+        }
+        document.body.appendChild(div);
+        setTimeout(() => {
+            div.style.display = 'none'
+        }, 3000)
+    })
+}
+window.addEventListener('keydown', (key) => {
+    if (key.ctrlKey && key.key.toLowerCase() === 'q') {
+        key.preventDefault();
+        window.location.replace('about:blank');
+        window.open('https://classroom.google.com/u/0/h', '_blank');
+        window.close();
+    }
+});
