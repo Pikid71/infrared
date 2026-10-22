@@ -14,7 +14,7 @@
     border-radius: 4px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    width: 50%;
+    min-width: 50%;
 }
 
 .room {
@@ -79,69 +79,65 @@
     font-size: 16px;
 }
 </style>
-    </head>
-    <body>
-        <div class="header">
-            <a class="h1" href="/c/home/">
-                Infra<span>Red</span>
-            </a>
-            <a href="/c/dashboard/">Dashboard</a>
-            <a href="/c/about/">About</a>
-            <a href="/c/feedback/">Feedback</a>
-            <a href="/c/tos/">TOS</a>
-            <a href="/c/login/" class="login-btn">Login</a>
-            <a href="/c/register/" class="login-btn" style="background: rgba(255, 255, 255, 0);">Register</a>
+</head>
+<body>
+    <div class="header">
+        <a class="h1" href="/c/home/">
+            Infra<span>Red</span>
+        </a>
+        <a href="/c/dashboard/">Dashboard</a>
+        <a href="/c/about/">About</a>
+        <a href="/c/feedback/">Feedback</a>
+        <a href="/c/tos/">TOS</a>
+        <a href="/c/login/" class="login-btn">Login</a>
+        <a href="/c/register/" class="login-btn" style="background: rgba(255, 255, 255, 0);">Register</a>
+    </div>
+    <div id="cont-large">
+        <div class="cont" id="cont">Log in to continue, redirecting...</div>
+        <div class="games-cont" id="games-cont" style="display: none;">
+            <div class="game">
+                <div class="name">Eaglercraft</div>
+                <div class="desc">Eaglercraft is a free, open-source project that allows users to play Minecraft Java Edition directly within a standard web browser without requiring any downloads, installations, or paid accounts. Originally created by an independent developer known as LAX1DUDE, it compiles Mojang’s official game assets into JavaScript and WebAssembly using a tool called TeaVM. This process allows a fully functional version of the game to run smoothly inside a web browser.</div>
+                <button class="launch-game" onclick="window.location.href='/play/eag';">Launch</button>
+            </div>
+            <div class="game">
+                <div class="name">Hollow Knight</div>
+                <div class="desc">Hollow Knight is a 2D action-adventure video game developed and published by Team Cherry in February 2017. You play as a small, silent knight exploring a vast, ruined underground kingdom called Hallownest. The game belongs to a genre called "Metroidvania," which means you explore a giant connected map, unlock new movement abilities, and return to areas you could not reach before.</div>
+                <button class="launch-game" onclick="window.location.href='/play/hkn';">Launch</button>
+            </div>
+            <div class="game">
+                <div class="name">Escape Road 2</div>
+                <div class="desc">Escape Road 2 is a fast-paced, blocky, low-poly driving and action game where you play as a getaway driver fleeing a massive police pursuit after a bank heist</div>
+                <button class="launch-game" onclick="window.location.href='/play/esc';">Launch</button>
+            </div>
         </div>
-        <div id="cont-large">
-            <div id="cont">Log in to continue, redirecting...</div>
-        </div>
+    </div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/script.js"></script>
 <script>
+socket.on('connect', () => {
+    login_key(getcookie('usrnm'), getcookie('key'))
 
-login_key(getcookie('usrnm'), getcookie('key'))
+    async function addRooms(rooms) {
+        const cont = document.getElementById('cont');
+        cont.innerHTML = '';
+        cont.className = 'cont';
+        for (const room in rooms) {
+            const div = document.createElement('div');
+            div.innerHTML = `
+            <a class="login-btn" href="/c/chat/${room}">${room}</a>
+            <p>${rooms[room].users.length} Users</p>
+            <div class="users" id="users-${room}">${rooms[room].users.map(u => u).join('<br>')}</div>`
+            div.className = 'room'
+            cont.appendChild(div);
+        };
+    }
 
-async function addRooms(rooms) {
-    const cont = document.getElementById('cont');
-    cont.innerHTML = '';
-    cont.className = 'cont';
-    for (const room in rooms) {
-        const div = document.createElement('div');
-        div.innerHTML = `
-        <a class="login-btn" href="/c/chat?r=${room}">${room}</a>
-        <p>${rooms[room].users.length} Users</p>
-        <div class="users" id="users-${room}">${rooms[room].users.map(u => u).join('<br>')}</div>`
-        div.className = 'room'
-        cont.appendChild(div);
-    };
-}
-
-socket.emit("get-rooms", (callback) => {
-    addRooms(callback.rooms)
-})
-
-const gamesmenu = `
-            <div class="games-cont">
-                <div class="game">
-                    <div class="name">Eaglercraft</div>
-                    <div class="desc">Eaglercraft is a free, open-source project that allows users to play Minecraft Java Edition directly within a standard web browser without requiring any downloads, installations, or paid accounts. Originally created by an independent developer known as LAX1DUDE, it compiles Mojang’s official game assets into JavaScript and WebAssembly using a tool called TeaVM. This process allows a fully functional version of the game to run smoothly inside a web browser.</div>
-                    <button class="launch-game" onclick="window.location.href='/play/eag';">Launch</button>
-                </div>
-                <div class="game">
-                    <div class="name">Hollow Knight</div>
-                    <div class="desc">Hollow Knight is a 2D action-adventure video game developed and published by Team Cherry in February 2017. You play as a small, silent knight exploring a vast, ruined underground kingdom called Hallownest. The game belongs to a genre called "Metroidvania," which means you explore a giant connected map, unlock new movement abilities, and return to areas you could not reach before.</div>
-                    <button class="launch-game" onclick="window.location.href='/play/hkn';">Launch</button>
-                </div>
-                <div class="game">
-                    <div class="name">Escape Road 2</div>
-                    <div class="desc">Escape Road 2 is a fast-paced, blocky, low-poly driving and action game where you play as a getaway driver fleeing a massive police pursuit after a bank heist</div>
-                    <button class="launch-game" onclick="window.location.href='/play/esc';">Launch</button>
-                </div>
-            </div>
-`
-setTimeout(function() {
-    document.getElementById('cont-large').innerHTML += gamesmenu
-}, 1000)
+    socket.emit("get-rooms", (callback) => {
+        addRooms(callback.rooms)
+    })
+    document.getElementById('games-cont').style.display = 'flex';
+});
 </script>
 </body>
 </html>

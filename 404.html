@@ -13,6 +13,7 @@
             }
             .home {
                 margin: auto;
+                margin-bottom: 15px;
                 display: block;
                 padding: 8px;
                 border-radius: 8px;
@@ -44,7 +45,10 @@
             Page not Found
         </div>
         <button autofocus class="home" onclick="window.location.href='/c/home/'">
-            Go Back Home
+            Go to Home Page
+        </button>
+        <button class="home" onclick="history.back()">
+            Go back
         </button>
     </body>
 </html>

@@ -212,7 +212,7 @@ try{
                 const target = parts[1]?.toLowerCase();
                 const targetuser = await users.findOne({ rl_username: target })
                 if (!targetuser) {
-                    sendmsgs(socket, 'Usage: /ban <username> <time> <reason>');
+                    sendmsgs(socket, 'Usage: /ban &lt;username&gt; &lt;time&gt; &lt;reason&gt;');
                     return true
                 }
                 socket.user = await users.findOne({ rl_username: socket.username.toLowerCase() })
@@ -232,7 +232,7 @@ try{
                 const reason = parts.slice(3).join(' ') || 'no reason'
                 await bannedusers.insertOne({
                     rl_username: targetuser.rl_username,
-                    expires: new Date() + time,
+                    expires: new Date(Date.now() + time),
                     reason: reason
                 })
                 sendmsgs(io, `${socket.username} banned ${target} for ${distime.toString() + timestr}` + (reason ? ' Reason: ' + reason : ''), room);
@@ -343,7 +343,7 @@ try{
         let user = socket.user
         if (!socket || !socket.username || !user){ return }
         const rank = await getRank(socket.username)
-        socket.rank = rank
+        socket.rank = rank  
         socket.user = user;
         await users.findOneAndUpdate({ rl_username: socket.username.toLowerCase() }, { $set: { id: socket.id } })
     };
@@ -466,6 +466,9 @@ try{
             socket.join(room);
             socket.room = room
             sendmsgs(io, `${socket.username} joined the room ${room}`, socket.room)
+            if(!rooms[room]){
+                rooms[room] = { users: [] }
+            }
             rooms[room].users.push(socket.username)
         }
     };
@@ -533,6 +536,10 @@ try{
         res.status(200).send('pong');
     });
 
+    app.get('/c/chat/:room', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'c', 'chat', 'index.html'));
+    });
+
     app.get('/r/:refid', (req, res) => {
         const refid = req.params.refid;
         const isbot = (req.headers['user-agent'] || '').toLowerCase().includes('bot');
@@ -590,7 +597,7 @@ try{
             login_key(username, key, callback, socket)
             socket.username = username
             if ((socket.handshake.headers.referer || '').includes('chat')){
-                socket.room = socket.handshake.query.r || 'main';
+                socket.room = socket.handshake.headers.referer.split('/').pop() || 'main';
                 join_room(io, socket, socket.room)
             }
             return
