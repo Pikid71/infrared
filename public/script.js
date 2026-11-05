@@ -1,5 +1,11 @@
-const socket = io()
 // path: /public/script.js
+
+try {
+    var socket = io();
+} catch (error) {
+    console.error('Error initializing socket:', error);
+}
+
 function login_key(username, key) {
     if (username && key) {
         socket.emit('Login-key', username, key, (callback) => {
@@ -66,7 +72,5 @@ window.addEventListener('keydown', (key) => {
     if (key.ctrlKey && key.key.toLowerCase() === 'q') {
         key.preventDefault();
         window.location.replace('about:blank');
-        window.open('https://classroom.google.com/u/0/h', '_blank');
-        window.close();
     }
 });

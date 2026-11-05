@@ -1,13 +1,10 @@
 // path: /server.js
 
 require('dotenv').config({ quiet: true });
-const LOGS_KEY = process.env.LOGS_KEY;
 const PORT = process.env.PORT;
 const DB_NAME = process.env.DB_NAME || 'database_eXHMlvTLlf613u9TAAAB';
 const aikey = process.env.OPENROUTER_API_KEY;
-const dsc_url_main = process.env.DISCORD_WEBHOOK_MAIN;
-const dsc_url_sys = process.env.DISCORD_WEBHOOK_SYS;
-const dsc_url_logs = process.env.DISCORD_WEBHOOK_LOGS;
+const chat_id = process.env.DISCORD_IR_CHAT_ID;
 
 const oglog = console.log;
 let logs = []
@@ -27,16 +24,6 @@ console.log = function (...args){
     logs.push(logg)
     clients.forEach(client => client.write(`\n ${logg}`))
     oglog(logg)
-    fetch(dsc_url_logs, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            username: 'Infrared Logs',
-            content: logg
-        })
-    })
 }
 
 console.log('<@&1546740919917613157>, the server was started')
@@ -58,6 +45,7 @@ const io = new Server(server);
 
 const nfilter = require('./filter');
 const { send } = require('./sendemail');
+const bot = require('./discord/bot').bot;
 
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
@@ -78,7 +66,7 @@ const openrouter = new OpenRouter({
 
 const defaultrooms = ['main', 'vip', 'mod', 'admin'];
 
-const rooms = {
+let rooms = {
     'main': {
         users: []
     },
@@ -105,18 +93,39 @@ try{
     const users = database.collection('users')
     const pendingusers = database.collection('pendingusers')
     const bannedusers = database.collection('banned')
+    const messages = database.collection('messages')
+    const announcements = database.collection('announcements')
+
+    async function initRooms() {
+        const otherRooms = await messages.find({}).toArray();
+        const uniqueRooms = [...new Set(otherRooms.map(msg => msg.room))];
+        for (const room of uniqueRooms) {
+            if (!rooms[room]) {
+                rooms[room] = { users: [] };
+            }
+        }
+    }
+    initRooms();
 
     async function getRank(user){
         const usre = await users.findOne({ rl_username: user?.toLowerCase() })
-        return usre.rank
+        return usre?.rank || 'new-user'
     }
     let chatopen = true;
     function generateKey() {
         return crypto.randomBytes(10).toString('hex');
     }
 
-    function clean_msg(msg) {
-        return marked.parse(nfilter.clean(DOMPurify.sanitize(msg))).trim()
+    function clean_msg(msg, { preventmarked = false, preventdom = false } = {}) {
+        if (preventmarked && preventdom) {
+            return nfilter.clean(msg).trim()
+        } else if (preventmarked) {
+            return DOMPurify.sanitize(nfilter.clean(msg)).trim()
+        } else if (preventdom) {
+            return marked.parse(nfilter.clean(msg)).trim()
+        } else {
+            return marked.parse(nfilter.clean(DOMPurify.sanitize(msg))).trim()
+        }
     }
 
     function numb(rank) {
@@ -135,43 +144,46 @@ try{
             default: return 5;
         }
     }
-    async function sendmsg(io, socket, msg){
-        io.to(socket.room).emit('Chat-msg', `${socket.username}`, clean_msg(msg), await getRank(socket.username), socket.user?.xp || 0);
-        console.log('    ' + socket.room + '[(' + await getRank(socket.username) + ') ' + socket.username + ']>> ' + clean_msg(msg));
-        await fetch(dsc_url_main, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: `[${socket.user.rank.toUpperCase()}][Level ${socket.user?.xp || 0}] ${socket.username}`,
-                content: clean_msg(msg)
-            })
+    async function sendmsg(io, socket, msg, { preventdiscord = false, fromdiscord = false } = {}) {
+        io.to(socket.room).emit('Chat-msg', `${socket.username + (fromdiscord ? ' <img src="/discord.png" alt="Discord" width="16" height="16">' : '')}`, clean_msg(msg), await getRank(socket.username), socket.user?.level || 0);
+        messages.insertOne({
+            username: socket.username + (fromdiscord ? ' <img src="/discord.png" alt="Discord" width="16" height="16">' : ''),
+            message: clean_msg(msg),
+            rank: await getRank(socket.username),
+            level: socket.user?.level || 0,
+            room: socket.room,
+            timestamp: new Date(),
+            allowdisplay: true
         })
+        console.log('    ' + socket.room + '[(' + await getRank(socket.username) + ') ' + socket.username + ']>> ' + clean_msg(msg, { preventdom: true }));
+        if (!preventdiscord) {
+            bot.sendto(chat_id, `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}`);
+        }
     }
-    async function sendmsgs(io, msg, room){
+    async function sendmsgs(io, msg, room, preventsave){
         const iduser = await users.findOne({ id: room })
         if (room){
-            io.to(room).emit('Chat-msg', 'SYSTEM', clean_msg(msg), 'system')
+            io.to(room).emit('Chat-msg', 'SYSTEM', clean_msg(msg, { preventdom: true }), 'system')
+            if (!preventsave) {
+                messages.insertOne({
+                    username: 'SYSTEM',
+                    message: clean_msg(msg),
+                    rank: 'system',
+                    level: 0,
+                    room: room,
+                    allowdisplay: true,
+                    timestamp: new Date()
+                })
+            }
             if (iduser) {
-                console.log('    ' + iduser.username + '[SYSTEM]>> ' + clean_msg(msg))
+                console.log('    ' + iduser.username + '[SYSTEM]>> ' + clean_msg(msg, { preventdom: true }));
             } else {
-                console.log('    ' + room + '[SYSTEM]>> ' + clean_msg(msg));
+                console.log('    ' + room + '[SYSTEM]>> ' + clean_msg(msg, { preventdom: true }));
             }
         } else {
-            io.emit('Chat-msg', 'SYSTEM', clean_msg(msg), 'system')
-            console.log('    [SYSTEM]>> ' + clean_msg(msg));
+            io.emit('Chat-msg', 'SYSTEM', clean_msg(msg, { preventdom: true }), 'system')
+            console.log('    [SYSTEM]>> ' + clean_msg(msg, { preventdom: true }));
         }
-        await fetch(dsc_url_sys, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: 'System',
-                content: `(${(iduser?.username || room || 'all rooms')}) ${clean_msg(msg)}`
-            })
-        })
     }
     async function handleCommand(io, socket, input, room) {
         if (!socket.username){ return }
@@ -199,6 +211,7 @@ try{
                 return true
             } else if (input.startsWith('/clear') && socket.user.is_mod){
                 io.to(room).emit('clear');
+                messages.updateMany({ room: room }, { $set: { allowdisplay: false } });
                 sendmsgs(io, `${socket.username} cleared the chat`, room);
                 console.log(`${socket.username} cleared the chat`)
                 return true
@@ -332,6 +345,16 @@ try{
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 io.emit('exec', 'reload()');
                 return true;
+            } else if (input.startsWith('/announce') && socket.user.is_admin){
+                const message = input.slice(9);
+                if (!message || !socket.user.is_admin){ return false }
+                announcements.insertOne({
+                    message: clean_msg(message),
+                    timestamp: new Date(),
+                    display: true
+                })
+                sendmsgs(io, 'Announcement set: ' + clean_msg(message), socket.room);
+                return true;
             }
             /*add commands before this */ else {
                 return false;
@@ -457,19 +480,19 @@ try{
                 if(numb(socket.user.rank) < numb(room)){
                     socket.join('main')
                     socket.room = 'main'
-                    sendmsgs(io, `${socket.username} joined the room ${room}`, socket.room)
+                    sendmsgs(io, `${socket.username} joined the room ${room}`, socket.room, true)
                     sendmsgs(socket, 'You cannot join a room with higher rank than your own. You have been joined to the main room')
                     rooms['main'].users.push(socket.username)
                     return
                 }
             }
-            socket.join(room);
-            socket.room = room
-            sendmsgs(io, `${socket.username} joined the room ${room}`, socket.room)
-            if(!rooms[room]){
-                rooms[room] = { users: [] }
+            socket.join(room.slice(0, 8));
+            socket.room = room.slice(0, 8)
+            sendmsgs(io, `${socket.username} joined the room ${room.slice(0, 8)}`, socket.room, true)
+            if(!rooms[room.slice(0, 8)]){
+                rooms[room.slice(0, 8)] = { users: [] }
             }
-            rooms[room].users.push(socket.username)
+            rooms[room.slice(0, 8)].users.push(socket.username)
         }
     };
     async function chat_msg(io, socket, msg) {
@@ -497,13 +520,22 @@ try{
             }
         } 
         sendmsg(io, socket, msg)
-        await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $inc: { xp: 5 } })
+        await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $inc: { xp: 5 }, $set: { level: Math.floor(Math.sqrt(socket.user?.xp || 0)) } })
         let user = await users.findOne({ rl_username: socket.username.toLowerCase() })
         socket.user = user;
         if (!socket.user?.is_member && socket.user?.xp >= 10){
             await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $set: { is_member: true, rank: 'member' } })
         }
     }
+    
+    bot.on('messageCreate', async (msg) => {
+        if(msg.author.bot) return
+        if(msg.channel.id !== chat_id) return
+        const user = await users.findOne({ rl_username: msg.author.tag.toLowerCase() })
+        if(!user) return
+        sendmsg(io, { user: user, username: user.username, room: 'main' }, msg.content, { preventdiscord: true, fromdiscord: true })
+    })
+
     async function ask_ai(io, socket, msg) {
         try {
             sendmsgs(socket, 'Thinking... This may take a few seconds.')
@@ -514,11 +546,11 @@ try{
                         { role: 'system', content: 'You are a helpful assistant within the infrared chat application. You will answer the user\'s questions and provide information as accurately as possible. If you do not know the answer, you will say "I don\'t know". If you are unsure, you will ask for clarification. Do not make assumptions.' },
                         { role: 'user', content: msg }
                     ],
-                    model: 'openrouter/free'
+                    model: 'nvidia/nemotron-3.5-super-vl:free'
                 }
             })
-            console.log(result.choices[0].message.content)
-            sendmsgs(io, result.choices[0].message.content, socket.room)
+            console.log(clean_msg(result.choices[0].message.content, { preventdom: true }))
+            sendmsgs(io, clean_msg(result.choices[0].message.content, { preventdom: true }), socket.room)
         } catch (error) {
             console.log(error)
         }
@@ -526,7 +558,7 @@ try{
 
     setInterval(async () => {
         typingusers = {};
-        io.emit('typping', typingusers)
+        io.emit('typing', typingusers)
     }, 5000)
 
     app.use(express.static('public'));
@@ -535,6 +567,14 @@ try{
     app.get('/dev/ping/', (req, res) => {
         res.status(200).send('pong');
     });
+
+    app.get('/dev/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'dev', 'notyet', 'index.html'));
+    });
+
+    app.get('/profile/:username', async (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'dev', 'notyet', 'index.html'));
+    })
 
     app.get('/c/chat/:room', (req, res) => {
         res.sendFile(path.join(__dirname, 'public', 'c', 'chat', 'index.html'));
@@ -552,7 +592,7 @@ try{
     app.get('/dev/logs/', async (req, res) => {
         const key = req.cookies?.key || ''
         let user = await users.findOne({ key: key });
-        if (req.query.key !== LOGS_KEY || !user?.is_owner) {
+        if (!user?.is_dev) {
             res.status(403).send('You are not authorized to view the logs.');
             return;
         }
@@ -614,16 +654,28 @@ try{
             } else {
                 delete typingusers[socket.username]
             }
-            io.emit('typping', typingusers)
+            io.emit('typing', typingusers)
         });
 
         socket.on('Chat-msg', (msg) =>{
             chat_msg(io, socket, msg)
         });
 
+        socket.on('get-msgs', async (callback) => {
+            if (!socket.username || !socket.room) return;
+            const msgs = await messages.find({ room: socket.room, allowdisplay: true }).sort({ timestamp: 1 }).toArray();
+            callback(msgs);
+        });
+
+        socket.on('get-announcements', async (callback) => {
+            if (!socket.username || !socket.room) return;
+            const ann = await announcements.find({ display: true }).sort({ timestamp: 1 }).toArray();
+            callback(ann);
+        });
+
         socket.on('disconnect', async () => {
             if(socket.room) {
-                sendmsgs(io, `${socket.username} left the room.`, socket.room);
+                sendmsgs(io, `${socket.username} left the room.`, socket.room, true);
             }
             if (rooms[socket.room]) {
                 const index = rooms[socket.room].users.indexOf(socket.username);
