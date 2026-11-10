@@ -159,12 +159,14 @@ try{
         if (!preventdiscord) {
             await bot.sendto(chat_id, `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}`);
             console.log('errorre')
-            await fetch(process.env.DSC_WHK, {
+            const res = await fetch(process.env.DSC_WHK, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: 'Infrared (backup)', content: `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}` })
             })
-            console.log('doen')
+            if (!res.ok) {
+                console.error('    Discord webhook send error: ' + await res.text());
+            }
         }
     }
     async function sendmsgs(io, msg, room, preventsave){
