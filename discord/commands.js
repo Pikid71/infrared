@@ -22,47 +22,25 @@ const commands = [
                 flags: 64
             })
 
-            const start = Date.now()
-
             try {
-                const response = await fetch('https://ir.pikid71.me/dev/ping')
+                let start = Date.now()
+                const responseir = await fetch('https://ir.pikid71.me/dev/ping')
+                const latencyir = Date.now() - start
 
-                const latency = Date.now() - start
+                start = Date.now()
+                const responsebeta = await fetch('https://super-pancake-wr4rx65497ggf59q5-8000.app.github.dev/dev/ping')
+                const latencybeta = Date.now() - start
 
-                if(!response.ok){
-                    interaction.editReply({
-                        content: '# Infrared Status \nWebsite: offline \nAPI: offline \n-# >Invalid response from server',
-                        flags: 64
-                    })
-                    return
-                }
-
-                const result = await response.text()
-
-                if (result !== 'pong') {
-                    interaction.editReply({
-                        content: '# Infrared Status \nWebsite: offline \nAPI: offline',
-                        flags: 64
-                    })
-                    return
-                }
-
-                interaction.editReply({
-                    content: `# Infrared Status \nWebsite: online \nAPI: online \nLatency: ${latency}ms`
+                await interaction.editReply({
+                    content: `Website: ${ responseir.ok ? 'Active' : 'Inactive' } (${latencyir}ms)\nBeta: ${ responsebeta.ok ? 'Active' : 'Inactive' } (${latencybeta}ms)`
                 })
             } catch (err) {
-                console.log('failed /status')
-
-                interaction.editReply({
+                await interaction.editReply({
                     content: 'Failed to fetch'
                 })
             }
         }
     }
 ]
-
-
-
-
 
 module.exports = { commands }

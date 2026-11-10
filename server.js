@@ -155,9 +155,16 @@ try{
             timestamp: new Date(),
             allowdisplay: true
         })
-        console.log('    ' + socket.room + '[(' + await getRank(socket.username) + ') ' + socket.username + ']>> ' + clean_msg(msg, { preventdom: true }));
+        console.log('    ' + socket.room + '[(' + await getRank(socket.username) + ') ' + socket.username + ']>> ' + clean_msg(msg, { preventdom: true, prevendmarked: true }));
         if (!preventdiscord) {
-            bot.sendto(chat_id, `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}`);
+            await bot.sendto(chat_id, `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}`);
+            console.log('errorre')
+            await fetch(process.env.DSC_WHK, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'Infrared (backup)', content: `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}` })
+            })
+            console.log('doen')
         }
     }
     async function sendmsgs(io, msg, room, preventsave){
@@ -281,11 +288,11 @@ try{
                 }
                 const rank = parts[2];
                 const is_vip = rank === 'vip';
-                const is_premium = rank === 'premium';
-                const is_mod = rank === 'mod';
-                const is_admin = rank === 'admin';
-                const is_dev = rank === 'dev';
-                const is_co_owner = rank === 'co-owner';
+                const is_premium = rank !== 'new-user' && rank !== 'member' && rank !== 'vip';
+                const is_mod = rank === 'mod' || rank === 'admin' || rank === 'dev' || rank === 'co-owner' || rank === 'owner';
+                const is_admin = rank === 'admin' || rank === 'dev' || rank === 'co-owner' || rank === 'owner';
+                const is_dev = rank === 'dev' || rank === 'co-owner' || rank === 'owner';
+                const is_co_owner = rank === 'co-owner' || rank === 'owner';
                 const is_owner = rank === 'owner';
 
                 if(!socket.user.is_admin) {
