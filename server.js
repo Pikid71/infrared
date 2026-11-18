@@ -26,8 +26,6 @@ console.log = function (...args){
     oglog(logg)
 }
 
-console.log('<@&1546740919917613157>, the server was started')
-
 const bcrypt = require('bcrypt');
 
 const crypto = require('crypto');
@@ -84,6 +82,7 @@ let rooms = {
 let typingusers = {};
 
 try{
+    send('Pi_Kid71', 'Server started', process.env.EMAIL)
     async function cn() {
         await mgclient.connect()
         console.log('Connected to MongoDB')
@@ -158,15 +157,6 @@ try{
         console.log('    ' + socket.room + '[(' + await getRank(socket.username) + ') ' + socket.username + ']>> ' + clean_msg(msg, { preventdom: true, prevendmarked: true }));
         if (!preventdiscord) {
             await bot.sendto(chat_id, `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}`);
-            console.log('errorre')
-            const res = await fetch(process.env.DSC_WHK, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: 'Infrared (backup)', content: `[Level ${socket.user?.level || 0}] ${socket.username}>> ${clean_msg(msg, { preventdom: true, preventmarked: true })}` })
-            })
-            if (!res.ok) {
-                console.error('    Discord webhook send error: ' + await res.text());
-            }
         }
     }
     async function sendmsgs(io, msg, room, preventsave){

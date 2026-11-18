@@ -15,6 +15,25 @@ const commands = [
     },
     {
         data: new SlashCommandBuilder()
+            .setName('say')
+            .setDescription('repeats what the user says')
+            .addStringOption(option =>
+                option
+                    .setName('message')
+                    .setDescription('The message to repeat')
+                    .setRequired(true)
+            ),
+        async execute(interaction){
+            await interaction.channel.send({
+                content: interaction.options.getString('message'),
+            })
+            await interaction.reply({
+                content: interaction.options.getString('message')
+            })
+        }
+    },
+    {
+        data: new SlashCommandBuilder()
             .setName('status')
             .setDescription('Tells if the server is on or not'),
         async execute(interaction){

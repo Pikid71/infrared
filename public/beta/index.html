@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Infrared -- Home(beta)</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="sidebar">
+            <div onclick="openpage('/c/dashboard')" class="nav-element"><img src="https://pikid71.me/infraredassets/images/dashboard.png"><span>Dashboard</span></div>
+            <div onclick="openpage('/c/chat')" class="nav-element"><img src="https://pikid71.me/infraredassets/images/chat.png"><span>Chat</span></div>
+            <div onclick="openpage('/c/games')" class="nav-element"><img src="https://pikid71.me/infraredassets/images/games.png"><span>Games</span></div>
+            <div onclick="openpage('/c/settings')" class="nav-element"><img src="https://pikid71.me/infraredassets/images/settings.png"><span>Settings</span></div>
+            <div onclick="openpage('/c/partners')" class="nav-element"><img src="https://pikid71.me/infraredassets/images/partners.png"><span>Partners</span></div>
+        </div>
+        <div class="mobile-navbar">
+            <div onclick="openpage('/c/dashboard')" class="mobile-nav-element"><img src="https://pikid71.me/infraredassets/images/dashboard.png"></div>
+            <div onclick="openpage('/c/chat')" class="mobile-nav-element"><img src="https://pikid71.me/infraredassets/images/chat.png"></div>
+            <div onclick="openpage('/c/games')" class="mobile-nav-element"><img src="https://pikid71.me/infraredassets/images/games.png"></div>
+            <div onclick="openpage('/c/settings')" class="mobile-nav-element"><img src="https://pikid71.me/infraredassets/images/settings.png"></div>
+            <div onclick="openpage('/c/partners')" class="mobile-nav-element"><img src="https://pikid71.me/infraredassets/images/partners.png"></div>
+        </div>
+        <iframe id="main-container">
+            <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Necessitatibus, ipsa cum? Ducimus veritatis nam facere excepturi quidem quo, perferendis fuga debitis neque reprehenderit consequatur obcaecati ab voluptatem quibusdam voluptates maxime!</p>
+        </iframe>
+        <script>
+            async function openpage(page) {
+                console.log('Opening page: ' + page);
+                const cont = document.getElementById('main-container')
+                cont.src = 'https://pikid71.me/'
+                window.history.pushState('', '', page)
+                cont.src = page
+            }
+        </script>
+    </body>
+</html>
