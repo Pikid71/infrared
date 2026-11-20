@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proxieee Browser</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: #0f1013; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .browser { height: 100%; display: grid; grid-template-rows: 54px 1fr; }
+    .toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #202124; border-bottom: 1px solid #34363b; }
+    .icon-button { width: 38px; height: 38px; border: 0; border-radius: 50%; background: transparent; color: #e7e7ea; cursor: pointer; font-size: 18px; }
+    .icon-button:hover { background: #34363b; }
+    .address-form { flex: 1; display: flex; height: 38px; min-width: 120px; border: 1px solid #46484f; border-radius: 19px; background: #2b2d31; }
+    .address-form:focus-within { border-color: #5865f2; box-shadow: 0 0 0 2px rgba(88,101,242,.2); }
+    #addressInput { width: 100%; padding: 0 16px; border: 0; outline: 0; background: transparent; color: #fff; font-size: 14px; }
+    .go-button { border: 0; width: 64px; border-radius: 19px; background: transparent; color: #9aa0a6; cursor: pointer; }
+    .go-button:hover { color: #fff; background: #5865f2; }
+    #proxyFrame { width: 100%; height: 100%; border: 0; background: #fff; }
+    .home { position: absolute; inset: 54px 0 0; display: grid; place-items: center; background: #18191c; z-index: 2; }
+    .home.hidden { display: none; }
+    .home-card { width: min(640px, calc(100% - 40px)); text-align: center; }
+    .home h1 { margin: 0 0 8px; font-size: 38px; }
+    .home p { margin: 0 0 24px; color: #949ba4; }
+    .shortcuts { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+    .shortcut { color: #dbdee1; background: #2b2d31; border: 1px solid #3f4147; border-radius: 9px; padding: 9px 14px; text-decoration: none; cursor: pointer; }
+    .shortcut:hover { background: #35373c; }
+  </style>
+</head>
+<body>
+  <main class="browser">
+    <nav class="toolbar" aria-label="Browser controls">
+      <button class="icon-button" id="backButton" title="Back" aria-label="Back">&#8592;</button>
+      <button class="icon-button" id="forwardButton" title="Forward" aria-label="Forward">&#8594;</button>
+      <button class="icon-button" id="reloadButton" title="Reload" aria-label="Reload">&#8635;</button>
+      <button class="icon-button" id="homeButton" title="Home" aria-label="Home">&#8962;</button>
+      <form class="address-form" id="omniboxForm">
+        <input id="addressInput" type="text" placeholder="Search or enter address" autocomplete="off" />
+        <button class="go-button" type="submit">Go</button>
+      </form>
+    </nav>
+    <iframe id="proxyFrame" title="Proxied web page"></iframe>
+  </main>
+
+  <section class="home" id="homePage">
+    <div class="home-card">
+      <h1>Proxieee</h1>
+      <p>Fast browsing through the proxy</p>
+      <div class="shortcuts">
+        <a class="shortcut" data-url="https://example.com">Example.com</a>
+        <a class="shortcut" data-url="https://en.wikipedia.org">Wikipedia</a>
+        <a class="shortcut" data-url="https://news.ycombinator.com">Hacker News</a>
+        <a class="shortcut" data-url="https://html.duckduckgo.com/html/">DuckDuckGo</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const form = document.getElementById('omniboxForm');
+    const input = document.getElementById('addressInput');
+    const frame = document.getElementById('proxyFrame');
+    const homePage = document.getElementById('homePage');
+    const publicBase = window.location.pathname.replace(/\/(?:proxieee)?\/?$/, '') || '';
+    const proxyBase = window.location.pathname.startsWith('/proxieee') ? '/proxieee' : publicBase;
+
+    function resolveInput(raw) {
+      const value = raw.trim();
+      if (/^https?:\/\//i.test(value)) return value;
+      if (/^[^\s]+\.[^\s]{2,}$/.test(value)) return 'https://' + value;
+      return 'https://bing.com/search/?q=' + encodeURIComponent(value);
+    }
+
+    function navigate(url) {
+      homePage.classList.add('hidden');
+      frame.src = proxyBase + '/p/' + encodeURIComponent(url);
+      input.value = url;
+    }
+
+    function decodeFrameAddress() {
+      try {
+        const frameUrl = new URL(frame.src, window.location.origin);
+        const markerIndex = frameUrl.pathname.indexOf('/p/');
+        if (markerIndex !== -1) {
+          input.value = decodeURIComponent(frameUrl.pathname.slice(markerIndex + 3));
+          homePage.classList.add('hidden');
+        }
+      } catch {
+        // Keep the last known address if the iframe URL is not proxy-formatted.
+      }
+    }
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      navigate(resolveInput(input.value));
+    });
+
+    document.querySelectorAll('[data-url]').forEach(link => {
+      link.addEventListener('click', event => {
+        event.preventDefault();
+        navigate(link.dataset.url);
+      });
+    });
+
+    document.getElementById('backButton').addEventListener('click', () => frame.contentWindow.history.back());
+    document.getElementById('forwardButton').addEventListener('click', () => frame.contentWindow.history.forward());
+    document.getElementById('reloadButton').addEventListener('click', () => frame.src = frame.src);
+    document.getElementById('homeButton').addEventListener('click', () => {
+      frame.src = 'about:blank';
+      input.value = '';
+      homePage.classList.remove('hidden');
+    });
+
+    frame.addEventListener('load', decodeFrameAddress);
+
+    window.addEventListener('message', event => {
+      if (event.source !== frame.contentWindow) return;
+      if (event.data?.type === 'proxieee-location') {
+        input.value = event.data.url;
+        homePage.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -42,7 +42,7 @@ const { Server } = require('socket.io');
 const io = new Server(server);
 
 const nfilter = require('./filter');
-const { send } = require('./sendemail');
+const email = require('./sendemail');
 const bot = require('./discord/bot').bot;
 
 const createDOMPurify = require('dompurify');
@@ -82,7 +82,6 @@ let rooms = {
 let typingusers = {};
 
 try{
-    send('Pi_Kid71', 'Server started', process.env.EMAIL)
     async function cn() {
         await mgclient.connect()
         console.log('Connected to MongoDB')
@@ -91,7 +90,8 @@ try{
     const database = mgclient.db(DB_NAME)
     const users = database.collection('users')
     const pendingusers = database.collection('pendingusers')
-    const bannedusers = database.collection('banned')
+    const bannedusers = database.collection('bannedusers')
+    const mutedusers = database.collection('mutedusers')
     const messages = database.collection('messages')
     const announcements = database.collection('announcements')
 
@@ -144,9 +144,9 @@ try{
         }
     }
     async function sendmsg(io, socket, msg, { preventdiscord = false, fromdiscord = false } = {}) {
-        io.to(socket.room).emit('Chat-msg', `${socket.username + (fromdiscord ? ' <img src="/discord.png" alt="Discord" width="16" height="16">' : '')}`, clean_msg(msg), await getRank(socket.username), socket.user?.level || 0);
+        io.to(socket.room).emit('Chat-msg', `${socket.username + (fromdiscord ? ' <img src="https://pi kid71.me/infraredassets/images/chat.png" alt="Discord" width="16" height="16">' : '')}`, clean_msg(msg), await getRank(socket.username), socket.user?.level || 0);
         messages.insertOne({
-            username: socket.username + (fromdiscord ? ' <img src="/discord.png" alt="Discord" width="16" height="16">' : ''),
+            username: socket.username + (fromdiscord ? ' <img src="https://pikid71.me/infraredassets/images/chat.png" alt="Discord" width="16" height="16">' : ''),
             message: clean_msg(msg),
             rank: await getRank(socket.username),
             level: socket.user?.level || 0,
@@ -189,6 +189,11 @@ try{
         socket.user = await users.findOne({ rl_username: socket.username.toLowerCase() });
         if (!socket.user) { return }
         let ban = await bannedusers.findOne({ rl_username: socket.user.username.toLowerCase() })
+        let mute = await mutedusers.findOne({ rl_username: socket.user.username.toLowerCase() })
+        if (mute && mute.expires < new Date()){
+            await mutedusers.deleteOne({ rl_username: socket.user.rl_username })
+            mute = null
+        }
         if (ban && ban.expires < new Date()){
             await bannedusers.deleteOne({ rl_username: socket.user.rl_username })
             ban = null
@@ -249,6 +254,36 @@ try{
                 })
                 sendmsgs(io, `${socket.username} banned ${target} for ${distime.toString() + timestr}` + (reason ? ' Reason: ' + reason : ''), room);
                 return true
+            } else if (input.startsWith('/mute') && socket.user.is_jrmod){
+                const parts = input.split(' ');
+                const target = parts[1]?.toLowerCase();
+                const targetuser = await users.findOne({ rl_username: target })
+                if (!targetuser) {
+                    sendmsgs(socket, 'Usage: /mute &lt;username&gt; &lt;time&gt; &lt;reason&gt;');
+                    return true
+                }
+                socket.user = await users.findOne({ rl_username: socket.username.toLowerCase() })
+                let time = parseFloat(parts[2]) || 10.0;
+                const distime = time
+                if(numb(targetuser.rank) >= numb(socket.user.rank)) {
+                    sendmsgs(socket, 'You cannot mute a user with equal or higher rank than you');
+                    return true
+                }
+                const timestr = parts[2]? parts[2].slice(-1) : 'm';
+                switch (timestr){
+                    case 's': time*=1000; break;
+                    case 'h': time*=3600000; break;
+                    case 'd': time*=86400000; break;
+                    default: time*=60000;
+                };
+                const reason = parts.slice(3).join(' ') || 'no reason'
+                await mutedusers.insertOne({
+                    rl_username: targetuser.rl_username,
+                    expires: new Date(Date.now() + time),
+                    reason: reason
+                })
+                sendmsgs(io, `${socket.username} muted ${target} for ${distime.toString() + timestr}` + (reason ? ' Reason: ' + reason : ''), room);
+                return true
             } else if(input.startsWith('/unban') && socket.user.is_mod){
                 const parts = input.trim().split(/ +/);
                 const target = parts[1]?.toLowerCase();
@@ -265,14 +300,31 @@ try{
                     sendmsgs(socket, `${target} is not banned`);
                     return true
                 }
+            } else if (input.startsWith('/unmute') && socket.user.is_jrmod){
+                const parts = input.trim().split(/ +/);
+                const target = parts[1]?.toLowerCase();
+                const mute = await mutedusers.findOne({ rl_username: target })
+                if (!target) {
+                    sendmsgs(socket, 'Usage: /unmute <username>');
+                    return true
+                }
+                if (mute){
+                    await mutedusers.deleteOne({ rl_username: target })
+                    sendmsgs(io, `${socket.username} unmuted ${target}`, room);
+                    return true
+                } else {
+                    sendmsgs(socket, `${target} is not muted`);
+                    return true
+                }
             } else if (input.startsWith('/kill') && socket.user.is_owner){
                 console.log(input.slice(6) ? `    Server Crashed by ${socket.username} from room "${socket.room}" Reason: ${input.slice(6)}` : `Server Crashed by ${socket.username} from room "${socket.room}"----------------`);
                 sendmsgs(io, input.slice(6) ? `Server Crashed by ${socket.username} from room "${socket.room}" Reason: ${input.slice(6)}` : `Server Crashed by ${socket.username} from room "${socket.room}"`);
                 setTimeout(() => process.exit(0), 500);
+                return true
             } else if (input.startsWith('/grant')) {
                 const parts = input.trim().split(/ +/);
                 const target = parts[1]?.toLowerCase();
-                let user = socket.user;
+                socket.user;
                 const targetuser = await users.findOne({ rl_username: target })
                 if (!(parts[2] && targetuser)){
                     sendmsgs(socket, 'Usage: /grant <username> <rank>');
@@ -397,7 +449,7 @@ try{
         setTimeout(async () => {
             await pendingusers.deleteOne({ rl_username: username?.toLowerCase() })
         }, 60000)
-        const err = await send(username, vcode, email)
+        const err = await email.sendcode(username, vcode, email)
         if (err) {
             callback({ error: err.text })
             return
@@ -427,6 +479,7 @@ try{
             is_vip: false,
             is_premium: false,
             is_mod: false,
+            is_jrmod: false,
             is_admin: false,
             is_dev: false,
             is_co_owner: false,
@@ -475,6 +528,15 @@ try{
     async function join_room(io, socket, room) {
         if(socket.username){
             socket.user = await users.findOne({ rl_username: socket.username.toLowerCase() })
+            const banned = await bannedusers.findOne({ rl_username: socket.username.toLowerCase() })
+            if (banned){
+                if (banned.expires < new Date()){
+                    await bannedusers.deleteOne({ rl_username: socket.username.toLowerCase() })
+                } else {
+                    sendmsgs(socket, 'You cannot join rooms when you are banned')
+                    return
+                }
+            }
             if (defaultrooms.includes(room)){
                 if(numb(socket.user.rank) < numb(room)){
                     socket.join('main')
@@ -517,13 +579,17 @@ try{
                 sendmsgs(socket, 'You cannot send messages when you are banned')
                 return
             }
-        } 
-        sendmsg(io, socket, msg)
-        await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $inc: { xp: 5 }, $set: { level: Math.floor(Math.sqrt(socket.user?.xp || 0)) } })
-        let user = await users.findOne({ rl_username: socket.username.toLowerCase() })
-        socket.user = user;
-        if (!socket.user?.is_member && socket.user?.xp >= 10){
-            await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $set: { is_member: true, rank: 'member' } })
+        }
+        if(chatopen || socket.user.is_mod){
+            sendmsg(io, socket, msg)
+            await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $inc: { xp: 5 }, $set: { level: Math.floor(Math.sqrt(socket.user?.xp || 0)) } })
+            let user = await users.findOne({ rl_username: socket.username.toLowerCase() })
+            socket.user = user;
+            if (!socket.user?.is_member && socket.user?.xp >= 10){
+                await users.updateOne({ rl_username: socket.username.toLowerCase() }, { $set: { is_member: true, rank: 'member' } })
+            }
+        } else {
+            sendmsgs(socket, 'Chat is currently locked. Only mods can send messages')
         }
     }
     
