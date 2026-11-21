@@ -1,7 +1,7 @@
 // path: /server.js
 
 require('dotenv').config({ quiet: true });
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8000;
 const DB_NAME = process.env.DB_NAME || 'database_eXHMlvTLlf613u9TAAAB';
 const aikey = process.env.OPENROUTER_API_KEY;
 const chat_id = process.env.DISCORD_IR_CHAT_ID;
