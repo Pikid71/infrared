@@ -26,6 +26,8 @@ function sendcode(username, code, user_email) {
         return err
     })
 }
-
+function allert(email, message) {
+    console.log(email, message)
+}
 console.log('Emailer Imported Successfully')
-module.exports = { sendcode, started }
+module.exports = { sendcode, allert }
