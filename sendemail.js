@@ -3,7 +3,7 @@ const emjprv = process.env.EMAILJS_PRIVATE;
 const emjpub = process.env.EMAILJS_PUBLIC;
 const template_id = 'template_infrared';
 const service_id = 'blackchat_conformation_2';
-function send(username, code, user_email) {
+function sendcode(username, code, user_email) {
     console.log(username, code, user_email)
     return emailjs.send(
         service_id,
@@ -26,5 +26,9 @@ function send(username, code, user_email) {
         return err
     })
 }
+
+function started(email, dev){
+    console.log('Server staarted')
+}
 console.log('Emailer Imported Successfully')
-module.exports = { send }
+module.exports = { sendcode, started }

@@ -1,5 +1,5 @@
 {
-  "name": "My Codespace",
+  "name": "Infrared",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -11,10 +11,10 @@
   "portsAttributes": {
     "8000": {
       "label": "InfraRed",
-      "onAutoForward": "notify"
+      "onAutoForward": "notify",
+      "visibility": "public"
     }
   },
   "postCreateCommand": "npm i",
-  "postStartCommand": "npm start",
-  "postAttachCommand": "gh codespace ports visibility 8000:public -c $CODESPACE_NAME"
+  "postStartCommand": "npm start"
 }
