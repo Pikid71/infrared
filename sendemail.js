@@ -27,8 +27,5 @@ function sendcode(username, code, user_email) {
     })
 }
 
-function started(email, dev){
-    console.log('Server staarted')
-}
 console.log('Emailer Imported Successfully')
 module.exports = { sendcode, started }
